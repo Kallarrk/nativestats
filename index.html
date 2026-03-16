@@ -3,60 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NativeStats | Inteligência</title>
+    <title>NativeStats | Inteligência em Odds</title>
     <style>
-        * { box-sizing: border-box; transition: 0.2s; }
-        body { background: #080808; color: #fff; font-family: sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        .container { background: #111; width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; border: 1px solid #222; }
-        .logo { text-align: center; font-size: 24px; font-weight: 900; margin-bottom: 30px; color: #00ff88; }
-        .field { margin-bottom: 15px; }
-        label { display: block; font-size: 10px; text-transform: uppercase; color: #666; margin-bottom: 5px; }
-        input { background: #1a1a1a; border: 1px solid #333; border-radius: 10px; padding: 15px; width: 100%; color: #fff; font-size: 16px; }
-        .btn { background: #00ff88; color: #000; border: none; padding: 18px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        #result { margin-top: 20px; padding: 15px; border-radius: 12px; display: none; text-align: center; font-weight: bold; }
-        .green { border: 1px solid #00ff88; color: #00ff88; background: rgba(0,255,136,0.1); }
-        .red { border: 1px solid #ff4444; color: #ff4444; background: rgba(255,68,68,0.1); }
+        * { box-sizing: border-box; transition: 0.2s ease-in-out; }
+        body { 
+            background: #080808; 
+            color: #ffffff; 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            margin: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh;
+        }
+        .container { 
+            background: #111111; 
+            width: 95%; 
+            max-width: 420px; 
+            padding: 40px 30px; 
+            border-radius: 24px; 
+            border: 1px solid #222; 
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            position: relative;
+        }
+        .help-icon {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            color: #444;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 18px;
+            border: 1px solid #333;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .logo { 
+            text-align: center; 
+            font-size: 26px; 
+            font-weight: 900; 
+            letter-spacing: -1.5px; 
+            margin-bottom: 35px;
+            color: #00ff88;
+        }
+        .logo span { color: #fff; font-weight: 300; }
+        .field { margin-bottom: 20px; }
+        label { 
+            display: block; 
+            font-size: 10px; 
+            text-transform: uppercase; 
+            color: #555; 
+            font-weight: 800; 
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        input { 
+            background: #181818; 
+            border: 1px solid #282828; 
+            border-radius: 12px; 
+            padding: 16px; 
+            width: 100%; 
+            color: #fff; 
+            font-size: 16px;
+        }
+        input:focus { border-color: #00ff88; outline: none; }
+        .btn-check { 
+            background: #00ff88; 
+            color: #000; 
+            border: none; 
+            padding: 18px; 
+            width: 100%; 
+            border-radius: 14px; 
+            font-weight: 800; 
+            font-size: 15px; 
+            cursor: pointer; 
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+        #help-box {
+            display: none;
+            font-size: 12px;
+            color: #aaa;
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        #panel-result { 
+            margin-top: 30px; 
+            border-radius: 16px; 
+            padding: 20px; 
+            display: none; 
+            text-align: center;
+        }
+        .green-zone { background: rgba(0, 255, 136, 0.05); border: 1px solid #00ff88; color: #00ff88; }
+        .red-zone { background: rgba(255, 68, 68, 0.05); border: 1px solid #ff4444; color: #ff4444; }
     </style>
 </head>
 <body>
+
     <div class="container">
-        <div class="logo">NATIVE STATS</div>
+        <div class="help-icon" onclick="toggleHelp()">?</div>
+        <div class="logo">NATIVE<span>STATS</span></div>
+
+        <div id="help-box">
+            <strong>Guia Rápido:</strong><br>
+            • Copie a linha da Superbet e cole no campo abaixo.<br>
+            • O sistema extrai o número automaticamente.<br>
+            • Verdes: Gols até 2.5 ou Escanteios até 9.5.
+        </div>
+
         <div class="field">
             <label>Confronto</label>
-            <input type="text" id="t" placeholder="Time A vs Time B">
+            <input type="text" id="teams" placeholder="Ex: Flamengo vs Vasco">
         </div>
-        <div class="field">
-            <label>Linha Superbet (Pode colar o texto)</label>
-            <input type="text" id="l" placeholder="Ex: Mais de 1.5">
-        </div>
-        <button class="btn" onclick="check()">ANALISAR</button>
-        <div id="result"></div>
-    </div>
-    <script>
-        function check() {
-            const val = document.getElementById('l').value;
-            const r = document.getElementById('result');
-            
-            // Extrai apenas os números e o ponto decimal do texto colado
-            const num = parseFloat(val.replace(/[^0-9.]/g, ''));
-            
-            r.style.display = 'block';
-            
-            if (isNaN(num)) {
-                r.className = 'red';
-                r.innerHTML = "VALOR INVÁLIDO";
-                return;
-            }
 
-            // Lógica para Gols (Linhas baixas) e Escanteios (Linhas altas)
-            if (num <= 2.5 || (num > 7 && num <= 9.5)) {
-                r.className = 'green';
-                r.innerHTML = "✅ GREEN PROVÁVEL (" + num + ")";
-            } else {
-                r.className = 'red';
-                r.innerHTML = "❌ RISCO ALTO (" + num + ")";
-            }
+        <div class="field">
+            <label>Linha da Superbet</label>
+            <input type="text" id="market_line" placeholder="Pode colar o texto aqui">
+        </div>
+
+        <button class="btn-check" onclick="runAnalysis()">Analisar Probabilidade</button>
+
+        <div id="panel-result">
+            <div id="v-title" style="font-size: 18px; font-weight: 800; margin-bottom: 5px;"></div>
+            <div id="v-desc" style="font-size: 13px; opacity: 0.8; line-height: 1.4;"></div>
+        </div>
+    </div>
+
+<script>
+    function toggleHelp() {
+        const box = document.getElementById('help-box');
+        box.style.display = box.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function runAnalysis() {
+        const teams = document.getElementById('teams').value;
+        const rawLine = document.getElementById('market_line').value;
+        const panel = document.getElementById('panel-result');
+        const title = document.getElementById('v-title');
+        const desc = document.getElementById('v-desc');
+
+        const line = parseFloat(rawLine.replace(/[^0-9.]/g, ''));
+
+        if(!teams || isNaN(line)) return;
+
+        panel.style.display = 'block';
+
+        if ((line <= 2.5) || (line > 7 && line <= 9.5)) {
+            panel.className = 'green-zone';
+            title.innerHTML = "✅ GREEN PROVÁVEL (" + line + ")";
+            desc.innerHTML = `Estatística para ${teams} valida a linha. Volume de jogo esperado favorável.`;
+        } else {
+            panel.className = 'red-zone';
+            title.innerHTML = "❌ RISCO DETECTADO (" + line + ")";
+            desc.innerHTML = `A linha de ${line} está fora da margem de segurança nativa.`;
         }
-    </script>
+    }
+</script>
+
 </body>
 </html>
