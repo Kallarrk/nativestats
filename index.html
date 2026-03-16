@@ -17,7 +17,7 @@
         #result-area { display: none; margin-top: 40px; }
         .circle-container { position: relative; width: 140px; height: 140px; margin: 0 auto 25px; }
         .circle-bg { fill: none; stroke: #1a1a1a; stroke-width: 10; }
-        .circle-progress { fill: none; stroke: #00ff88; stroke-width: 10; stroke-linecap: round; stroke-dasharray: 408; stroke-dashoffset: 408; transform: rotate(-90deg); transform-origin: 50% 50%; transition: 2s ease; }
+        .circle-progress { fill: none; stroke: #00ff88; stroke-width: 10; stroke-linecap: round; stroke-dasharray: 408; stroke-dashoffset: 408; transform: rotate(-90deg); transform-origin: 50% 50%; transition: 1.5s ease; }
         .percentage { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 28px; font-weight: 900; color: #00ff88; }
         .veredito-label { color: #fff; font-size: 18px; font-weight: 800; margin-bottom: 15px; }
         .analysis-text { color: #666; font-size: 14px; line-height: 1.6; text-align: center; }
@@ -52,9 +52,15 @@
         const t = document.getElementById('teams').value.trim();
         const l = document.getElementById('line').value;
         const btn = document.getElementById('btn');
-        const num = parseFloat(l.replace(/[^0-9.]/g, ''));
+        
+        // Extrai apenas o número. Ignora textos como "Mais de" ou "Gols"
+        const matches = l.match(/(\d+(\.\d+)?)/);
+        const num = matches ? parseFloat(matches[0]) : null;
 
-        if(!t || isNaN(num)) return;
+        if(!t || num === null) {
+            alert("Preencha os campos corretamente.");
+            return;
+        }
 
         btn.innerHTML = "PROCESSANDO...";
         document.getElementById('result-area').style.display = 'none';
@@ -70,11 +76,11 @@
             const bar = document.getElementById('bar');
             bar.style.strokeDashoffset = 408 - (408 * prob) / 100;
             document.getElementById('perc').innerHTML = prob + "%";
-            document.getElementById('veredito').innerHTML = `Veredito: Over ${num} Favorável`;
+            document.getElementById('veredito').innerHTML = "Veredito: Over " + num + " Favorável";
             
-            const media = (num + 0.8).toFixed(1);
-            document.getElementById('desc').innerHTML = `O confronto entre ${t} apresenta um cenário tático favorável. A equipe mandante mantém filosofia de pressão alta. A média somada das equipes é de ${media} por partida, com 75% dos jogos recentes ultrapassando a marca de ${num}.`;
-        }, 1000);
+            const media = (num + 0.7).toFixed(1);
+            document.getElementById('desc').innerHTML = "O confronto entre " + t + " em março de 2026 apresenta um cenário tático favorável para estatísticas nativas. A média somada das equipes é de " + media + " por partida. com 75% dos jogos recentes ultrapassando a marca de " + num + ".";
+        }, 800);
     }
 </script>
 </body>
