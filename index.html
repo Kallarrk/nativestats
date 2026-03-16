@@ -3,60 +3,372 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NativeStats</title>
+    <title>NativeStats | Inteligência</title>
     <style>
-        * { box-sizing: border-box; font-family: sans-serif; }
-        body { background: #000; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .app-card { background: #0a0a0a; width: 95%; max-width: 400px; padding: 35px; border-radius: 30px; border: 2px solid #00ff88; text-align: center; }
-        .logo { font-size: 24px; font-weight: 900; margin-bottom: 30px; color: #00ff88; }
+        * { box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; transition: 0.3s ease; }
+        body { 
+            background: #000; 
+            color: #fff; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 20px;
+        }
+        .app-card { 
+            background: #0a0a0a; 
+            width: 100%; 
+            max-width: 400px; 
+            padding: 35px; 
+            border-radius: 30px; 
+            border: 2px solid #00ff88; 
+            text-align: center; 
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+        }
+        .logo { font-size: 24px; font-weight: 900; margin-bottom: 30px; color: #00ff88; letter-spacing: -1px; }
+        .logo span { color: #fff; font-weight: 300; }
         .input-group { text-align: left; margin-bottom: 20px; }
-        label { display: block; font-size: 10px; color: #444; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; }
-        input { background: #111; border: 1px solid #222; border-radius: 12px; padding: 15px; width: 100%; color: #fff; font-size: 16px; outline: none; }
-        .btn-analyze { background: #00ff88; color: #000; border: none; padding: 18px; width: 100%; border-radius: 15px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
-        #result-area { display: none; margin-top: 35px; }
-        .circle-container { position: absolute; width: 130px; height: 130px; margin-left: auto; margin-right: auto; left: 0; right: 0; }
-        .percentage { font-size: 26px; font-weight: 900; color: #00ff88; margin-top: 45px; display: block; }
-        .veredito-label { color: #fff; font-size: 18px; font-weight: 800; margin-top: 100px; margin-bottom: 12px; }
-        .analysis-text { color: #777; font-size: 13px; line-height: 1.5; text-align: center; }
+        label { display: block; font-size: 10px; color: #444; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        input, select { background: #111; border: 1px solid #222; border-radius: 12px; padding: 15px; width: 100%; color: #fff; font-size: 16px; outline: none; }
+        input:focus, select:focus { border-color: #00ff88; }
+        
+        .btn-analyze { 
+            background: #00ff88; 
+            color: #000; 
+            border: none; 
+            padding: 18px; 
+            width: 100%; 
+            border-radius: 15px; 
+            font-weight: 900; 
+            cursor: pointer; 
+            text-transform: uppercase; 
+            margin-top: 10px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-analyze:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-secondary {
+            background: #1a1a1a;
+            color: #00ff88;
+            border: 1px solid #333;
+            padding: 12px;
+            width: 100%;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+        .btn-secondary:hover:not(:disabled) { background: #222; border-color: #00ff88; }
+
+        #result-area { display: none; margin-top: 35px; animation: fadeIn 0.6s ease; }
+        .circle-container { position: relative; width: 130px; height: 130px; margin: 0 auto 20px; }
+        .circle-bg { fill: none; stroke: #1a1a1a; stroke-width: 10; }
+        .circle-progress { 
+            fill: none; 
+            stroke: #00ff88; 
+            stroke-width: 10; 
+            stroke-linecap: round;
+            stroke-dasharray: 377; 
+            stroke-dashoffset: 377; 
+            transform: rotate(-90deg); 
+            transform-origin: 50% 50%; 
+            transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .percentage { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 26px; font-weight: 900; color: #00ff88; }
+        .veredito-label { color: #fff; font-size: 18px; font-weight: 800; margin-bottom: 12px; text-transform: uppercase; }
+        .analysis-text { color: #777; font-size: 13px; line-height: 1.5; text-align: justify; margin-bottom: 20px; }
+        
+        .ai-features {
+            border-top: 1px solid #222;
+            padding-top: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .loader { width: 16px; height: 16px; border: 2px solid #000; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; display: none; }
+        .error-msg { color: #ff4444; font-size: 11px; margin-top: 10px; display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
-    <div class="app-card">
-        <div class="logo">NATIVE STATS</div>
-        <div class="input-group">
-            <label>Confronto</label>
-            <input type="text" id="teams" placeholder="Ex: Flamengo vs Vasco">
+
+<div class="app-card">
+    <div class="logo">NATIVE STATS</div>
+    
+    <div class="input-group">
+        <label>Modalidade</label>
+        <select id="sport">
+            <option value="futebol">Futebol</option>
+            <option value="basquete">Basquete</option>
+            <option value="volei">Vôlei</option>
+            <option value="esports">eSports</option>
+        </select>
+    </div>
+
+    <div class="input-group">
+        <label>Confronto</label>
+        <input type="text" id="teams" placeholder="Ex: Bragantino vs São Paulo">
+    </div>
+
+    <div class="input-group">
+        <label>Linha da Superbet</label>
+        <input type="text" id="line" placeholder="Ex: Mais de 9.5">
+    </div>
+
+    <button class="btn-analyze" id="btn-action" onclick="runAnalysis()">
+        <span id="btn-text">Analisar Probabilidade</span>
+        <div class="loader" id="btn-loader"></div>
+    </button>
+
+    <div id="error-box" class="error-msg"></div>
+
+    <div id="result-area">
+        <div class="circle-container">
+            <svg width="130" height="130">
+                <circle class="circle-bg" cx="65" cy="65" r="60"></circle>
+                <circle id="bar" class="circle-progress" cx="65" cy="65" r="60"></circle>
+            </svg>
+            <div class="percentage" id="perc">0%</div>
         </div>
-        <div class="input-group">
-            <label>Linha da Superbet</label>
-            <input type="text" id="line" placeholder="Ex: Mais de 9.5">
-        </div>
-        <button class="btn-analyze" id="btn" onclick="analyze()">Analisar Probabilidade</button>
-        <div id="result-area">
-            <div style="height: 130px; position: relative;">
-                <span class="percentage" id="perc">0%</span>
-            </div>
-            <div class="veredito-label" id="veredito"></div>
-            <p class="analysis-text" id="desc"></p>
+        <div class="veredito-label" id="veredito"></div>
+        <p class="analysis-text" id="desc"></p>
+
+        <div class="ai-features">
+            <button class="btn-secondary" id="btn-suggest" onclick="suggestAlternative()">
+                ✨ Alternativa
+            </button>
+            <button class="btn-secondary" id="btn-tts" onclick="speakAnalysis()">
+                ✨ Ouvir
+            </button>
         </div>
     </div>
-    <script>
-        function analyze() {
-            var t = document.getElementById('teams').value;
-            var l = document.getElementById('line').value;
-            var n = parseFloat(l.replace(/[^0-9.]/g, ''));
-            if(!t || isNaN(n)) return;
-            document.getElementById('btn').innerText = "PROCESSANDO...";
-            document.getElementById('result-area').style.display = 'none';
-            setTimeout(function() {
-                document.getElementById('btn').innerText = "ANALISAR PROBABILIDADE";
-                document.getElementById('result-area').style.display = 'block';
-                var p = 75 + (t.length % 10);
-                document.getElementById('perc').innerText = p + "%";
-                document.getElementById('veredito').innerText = "Veredito: Over " + n + " Favorável";
-                document.getElementById('desc').innerText = "O confronto entre " + t + " apresenta cenário tático favorável. A média suporta a linha de " + n + ".";
-            }, 800);
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    const apiKey = "";
+    let auth = null;
+    let currentAnalysis = "";
+
+    const initFirebase = async () => {
+        try {
+            const configStr = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+            if (configStr) {
+                const app = initializeApp(JSON.parse(configStr));
+                auth = getAuth(app);
+                const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                if (token) { await signInWithCustomToken(auth, token); } 
+                else { await signInAnonymously(auth); }
+            }
+        } catch (e) { console.error("Erro auth"); }
+    };
+
+    const callAI = async (prompt) => {
+        const delays = [1000, 2000, 4000, 8000];
+        for (let i = 0; i < delays.length; i++) {
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            responseSchema: {
+                                type: "OBJECT",
+                                properties: {
+                                    probabilidade: { type: "NUMBER" },
+                                    veredito: { type: "STRING" },
+                                    analise: { type: "STRING" },
+                                    status: { type: "STRING" }
+                                }
+                            }
+                        }
+                    })
+                });
+                if (!response.ok) throw new Error();
+                const json = await response.json();
+                return JSON.parse(json.candidates[0].content.parts[0].text);
+            } catch (err) {
+                if (i === delays.length - 1) throw new Error("Erro de rede. Tente novamente.");
+                await new Promise(r => setTimeout(r, delays[i]));
+            }
         }
-    </script>
+    };
+
+    // Helper to convert PCM to WAV for Gemini TTS
+    function pcmToWav(pcmData, sampleRate) {
+        const buffer = new ArrayBuffer(44 + pcmData.length * 2);
+        const view = new DataView(buffer);
+        const writeString = (offset, string) => {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        };
+        writeString(0, 'RIFF');
+        view.setUint32(4, 32 + pcmData.length * 2, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(36, 'data');
+        view.setUint32(40, pcmData.length * 2, true);
+        for (let i = 0; i < pcmData.length; i++) {
+            view.setInt16(44 + i * 2, pcmData[i], true);
+        }
+        return buffer;
+    }
+
+    window.speakAnalysis = async () => {
+        const btn = document.getElementById('btn-tts');
+        const textToSpeak = document.getElementById('desc').innerText;
+        if (!textToSpeak) return;
+
+        btn.disabled = true;
+        btn.innerText = "✨ Processando...";
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: `Diga de forma profissional e analítica: ${textToSpeak}` }] }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: {
+                            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } }
+                        }
+                    }
+                })
+            });
+
+            const result = await response.json();
+            const audioData = result.candidates[0].content.parts[0].inlineData.data;
+            const mimeType = result.candidates[0].content.parts[0].inlineData.mimeType;
+            const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)?.[1] || "24000");
+
+            const binaryString = atob(audioData);
+            const pcmData = new Int16Array(binaryString.length / 2);
+            for (let i = 0; i < pcmData.length; i++) {
+                pcmData[i] = (binaryString.charCodeAt(i * 2 + 1) << 8) | binaryString.charCodeAt(i * 2);
+            }
+
+            const wavBuffer = pcmToWav(pcmData, sampleRate);
+            const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audio.play();
+            audio.onended = () => {
+                btn.disabled = false;
+                btn.innerText = "✨ Ouvir";
+            };
+        } catch (err) {
+            console.error(err);
+            btn.disabled = false;
+            btn.innerText = "✨ Ouvir";
+        }
+    };
+
+    window.suggestAlternative = async () => {
+        const t = document.getElementById('teams').value.trim();
+        const l = document.getElementById('line').value.trim();
+        const s = document.getElementById('sport').value;
+        const btn = document.getElementById('btn-suggest');
+
+        btn.disabled = true;
+        btn.innerText = "✨ Sugerindo...";
+
+        const prompt = `O mercado de ${l} para ${t} (${s}) foi analisado. Sugira uma linha alternativa (mais segura ou mais lucrativa) baseada em dados reais de 2026. 
+        Retorne JSON com probabilidade (0-100), veredito (Aposta sugerida), analise (por que essa linha é melhor) e status (FAVORAVEL).`;
+
+        try {
+            const data = await callAI(prompt);
+            updateUI(data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "✨ Alternativa";
+        }
+    };
+
+    function updateUI(data) {
+        const resultArea = document.getElementById('result-area');
+        resultArea.style.display = 'block';
+        document.getElementById('veredito').innerText = `Veredito: ${data.veredito}`;
+        document.getElementById('desc').innerText = data.analise;
+        document.getElementById('perc').innerText = `${data.probabilidade}%`;
+
+        const circle = document.getElementById('bar');
+        const r = 60;
+        const circumference = 2 * Math.PI * r; 
+        circle.style.strokeDasharray = circumference;
+        const offset = circumference - (circumference * data.probabilidade) / 100;
+
+        if (data.status === 'FAVORAVEL') circle.style.stroke = "#00ff88";
+        else if (data.status === 'MODERADO') circle.style.stroke = "#ffbb00";
+        else circle.style.stroke = "#ff4444";
+
+        setTimeout(() => {
+            circle.style.strokeDashoffset = offset;
+        }, 100);
+    }
+
+    window.runAnalysis = async () => {
+        const t = document.getElementById('teams').value.trim();
+        const l = document.getElementById('line').value.trim();
+        const s = document.getElementById('sport').value;
+        const btn = document.getElementById('btn-action');
+        const btnText = document.getElementById('btn-text');
+        const loader = document.getElementById('btn-loader');
+        const resultArea = document.getElementById('result-area');
+        const errorBox = document.getElementById('error-box');
+
+        if (!t || !l) return;
+
+        errorBox.style.display = 'none';
+        resultArea.style.display = 'none';
+        btn.disabled = true;
+        btnText.style.display = 'none';
+        loader.style.display = 'block';
+
+        const prompt = `Analise o confronto ${t} no esporte ${s} para a linha ${l}. 
+        Estamos em março de 2026. Use voz ativa e frases curtas. 
+        Não use as palavras: cenário, utilizar, revolucionar, vislumbre. 
+        Evite adjetivos inúteis. 
+        Retorne JSON com probabilidade (0-100), veredito (Over X Favorável), analise (texto técnico curto) e status (FAVORAVEL, MODERADO ou RISCO).`;
+
+        try {
+            const data = await callAI(prompt);
+            updateUI(data);
+            resultArea.scrollIntoView({ behavior: 'smooth' });
+        } catch (err) {
+            errorBox.innerText = err.message;
+            errorBox.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btnText.style.display = 'block';
+            loader.style.display = 'none';
+        }
+    };
+
+    window.addEventListener('DOMContentLoaded', initFirebase);
+</script>
+
 </body>
 </html>
