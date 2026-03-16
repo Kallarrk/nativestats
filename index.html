@@ -45,9 +45,9 @@
             cursor: pointer; 
             text-transform: uppercase; 
             margin-top: 10px; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
             gap: 10px;
         }
         .btn-analyze:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -116,7 +116,7 @@
 
     <div class="input-group">
         <label>Confronto</label>
-        <input type="text" id="teams" placeholder="Ex: Athletico PR vs Coritiba">
+        <input type="text" id="teams" placeholder="Ex: Newcastle vs Chelsea">
     </div>
 
     <div class="input-group">
@@ -159,19 +159,28 @@
 
     const initApp = async () => {
         try {
-            const configStr = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-            if (configStr) {
-                const app = initializeApp(configStr);
+            // Proteção para o GitHub: verifica se as globais existem
+            const hasFirebase = typeof __firebase_config !== 'undefined';
+            const config = hasFirebase ? JSON.parse(__firebase_config) : null;
+
+            if (config) {
+                const app = initializeApp(config);
                 auth = getAuth(app);
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
+                
+                const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                if (token) {
+                    await signInWithCustomToken(auth, token);
                 } else {
                     await signInAnonymously(auth);
                 }
+                
                 onAuthStateChanged(auth, (u) => { user = u; });
+            } else {
+                // Caso esteja no GitHub, define um utilizador padrão para não travar
+                user = { uid: "external-user" };
             }
         } catch (e) {
-            console.error("Falha na inicialização.");
+            console.warn("Ambiente externo detectado.");
             user = { uid: "local-user" };
         }
     };
@@ -207,7 +216,6 @@
                 let content = json.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (!content) throw new Error();
                 
-                // Limpa marcações markdown para evitar erro no parse
                 content = content.replace(/```json|```/g, "").trim();
                 return JSON.parse(content);
             } catch (err) {
@@ -216,7 +224,7 @@
                 await new Promise(r => setTimeout(r, delay));
             }
         }
-        throw new Error("Erro de ligação. Tente mais tarde.");
+        throw new Error("Erro de ligação. Verifique a sua internet.");
     };
 
     function pcmToWav(pcmData, sampleRate) {
@@ -276,7 +284,7 @@
 
             const dataView = new DataView(bytes.buffer);
             const pcmData = new Int16Array(len / 2);
-            // Ganho reduzido para 0.1 para áudio cristalino
+            // Ganho calibrado para áudio limpo
             for (let i = 0; i < pcmData.length; i++) {
                 pcmData[i] = Math.round(dataView.getInt16(i * 2, false) * 0.1);
             }
