@@ -116,7 +116,7 @@
 
     <div class="input-group">
         <label>Confronto</label>
-        <input type="text" id="teams" placeholder="Ex: Athletico PR vs Coritiba">
+        <input type="text" id="teams" placeholder="Ex: Santos vs Palmeiras">
     </div>
 
     <div class="input-group">
@@ -202,7 +202,9 @@
                 });
                 if (!response.ok) throw new Error();
                 const json = await response.json();
-                return JSON.parse(json.candidates[0].content.parts[0].text);
+                const content = json.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!content) throw new Error("Sem resposta.");
+                return JSON.parse(content.replace(/```json|```/g, ""));
             } catch (err) {
                 if (i === delays.length - 1) throw err;
                 await new Promise(r => setTimeout(r, delays[i]));
@@ -267,9 +269,8 @@
 
             const dataView = new DataView(bytes.buffer);
             const pcmData = new Int16Array(len / 2);
-            // Ganho reduzido para 0.2 para limpar o som estourado
             for (let i = 0; i < pcmData.length; i++) {
-                pcmData[i] = Math.round(dataView.getInt16(i * 2, false) * 0.2);
+                pcmData[i] = Math.round(dataView.getInt16(i * 2, false) * 0.15);
             }
 
             const wavBuffer = pcmToWav(pcmData, 24000);
@@ -323,7 +324,12 @@
     }
 
     const runAnalysis = async () => {
-        if (!user) return;
+        if (!user) {
+            const errorBox = document.getElementById('error-box');
+            errorBox.innerText = "A aguardar autenticação. Tente novamente em segundos.";
+            errorBox.style.display = 'block';
+            return;
+        }
         const t = document.getElementById('teams').value.trim();
         const l = document.getElementById('line').value.trim();
         const s = document.getElementById('sport').value;
@@ -347,7 +353,7 @@
             updateUI(data);
             resultArea.scrollIntoView({ behavior: 'smooth' });
         } catch (err) {
-            errorBox.innerText = "Erro ao processar. Tente novamente.";
+            errorBox.innerText = "Erro ao processar. Verifique a sua ligação.";
             errorBox.style.display = 'block';
         } finally {
             btn.disabled = false;
