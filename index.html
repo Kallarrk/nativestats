@@ -6,27 +6,43 @@
     <title>NativeStats | Inteligência em Odds</title>
     <style>
         * { box-sizing: border-box; transition: 0.3s ease; }
-        body { background: #080808; color: #fff; font-family: 'Inter', sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        .container { background: #111; width: 95%; max-width: 450px; padding: 35px; border-radius: 28px; border: 1px solid #222; box-shadow: 0 40px 80px rgba(0,0,0,0.9); }
+        body { background: #080808; color: #fff; font-family: 'Inter', -apple-system, sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        .container { background: #111; width: 95%; max-width: 450px; padding: 35px; border-radius: 28px; border: 1px solid #222; box-shadow: 0 40px 80px rgba(0,0,0,0.9); position: relative; }
         .logo { text-align: center; font-size: 28px; font-weight: 900; letter-spacing: -1px; margin-bottom: 30px; color: #00ff88; }
         .logo span { color: #fff; font-weight: 300; }
         .field { margin-bottom: 20px; }
         label { display: block; font-size: 11px; text-transform: uppercase; color: #555; font-weight: 800; margin-bottom: 8px; letter-spacing: 1px; }
-        input { background: #181818; border: 1px solid #282828; border-radius: 14px; padding: 18px; width: 100%; color: #fff; font-size: 16px; outline: none; }
-        input:focus { border-color: #00ff88; }
-        .btn-check { background: #00ff88; color: #000; border: none; padding: 20px; width: 100%; border-radius: 16px; font-weight: 900; font-size: 16px; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
+        input, select { background: #181818; border: 1px solid #282828; border-radius: 14px; padding: 18px; width: 100%; color: #fff; font-size: 16px; outline: none; }
+        input:focus, select:focus { border-color: #00ff88; background: #1c1c1c; }
+        .btn-check { background: #00ff88; color: #000; border: none; padding: 20px; width: 100%; border-radius: 16px; font-weight: 900; font-size: 16px; cursor: pointer; text-transform: uppercase; margin-top: 10px; position: relative; }
+        .btn-check:disabled { opacity: 0.6; cursor: not-allowed; }
         #panel-result { margin-top: 30px; display: none; animation: fadeIn 0.5s ease; }
-        .result-box { background: rgba(0, 255, 136, 0.03); border: 1px solid #00ff88; border-radius: 20px; padding: 25px; }
+        .result-box { background: rgba(0, 255, 136, 0.03); border: 1px solid #00ff88; border-radius: 20px; padding: 25px; text-align: center; }
         .prob-value { font-size: 32px; font-weight: 900; color: #00ff88; margin: 10px 0; display: block; }
-        .veridito-title { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 15px; }
+        .veridito-title { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 15px; text-transform: uppercase; }
         .ia-text { font-size: 14px; color: #aaa; line-height: 1.6; text-align: justify; }
+        .loader { width: 20px; height: 20px; border: 3px solid #000; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; display: none; margin: 0 auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .error-msg { color: #ff4444; font-size: 12px; margin-top: 15px; text-align: center; display: none; }
+        .yellow-border { border-color: #ffbb00 !important; color: #ffbb00 !important; }
+        .red-border { border-color: #ff4444 !important; color: #ff4444 !important; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <div class="logo">NATIVE<span>STATS</span></div>
+
+        <div class="field">
+            <label>Modalidade</label>
+            <select id="sport">
+                <option value="futebol">Futebol</option>
+                <option value="basquete">Basquete</option>
+                <option value="volei">Vôlei</option>
+                <option value="esports">eSports</option>
+            </select>
+        </div>
 
         <div class="field">
             <label>Confronto</label>
@@ -38,10 +54,15 @@
             <input type="text" id="market_line" placeholder="Ex: Mais de 9.5">
         </div>
 
-        <button class="btn-check" onclick="runAnalysis()">Analisar Probabilidade</button>
+        <button class="btn-check" id="btn-action" onclick="runAnalysis()">
+            <span id="btn-text">Analisar Probabilidade</span>
+            <div class="loader" id="btn-loader"></div>
+        </button>
+
+        <div id="error-box" class="error-msg"></div>
 
         <div id="panel-result">
-            <div class="result-box">
+            <div class="result-box" id="result-container">
                 <div class="veridito-title" id="v-title"></div>
                 <span class="prob-value" id="v-prob"></span>
                 <div class="ia-text" id="v-desc"></div>
@@ -49,34 +70,115 @@
         </div>
     </div>
 
-<script>
-    function runAnalysis() {
-        const teams = document.getElementById('teams').value.trim();
-        const rawLine = document.getElementById('market_line').value;
-        const panel = document.getElementById('panel-result');
-        
-        const line = parseFloat(rawLine.replace(/[^0-9.]/g, ''));
-        if(!teams || isNaN(line)) return;
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        panel.style.display = 'block';
-        
-        // Gerador de semente fixa baseada no nome do confronto
-        let seed = 0;
-        for (let i = 0; i < teams.length; i++) {
-            seed += teams.charCodeAt(i);
+    const apiKey = "";
+    let auth = null;
+
+    const initFirebase = async () => {
+        try {
+            const configStr = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+            if (configStr) {
+                const app = initializeApp(JSON.parse(configStr));
+                auth = getAuth(app);
+                const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                if (token) { await signInWithCustomToken(auth, token); } 
+                else { await signInAnonymously(auth); }
+            }
+        } catch (e) { console.error("Auth init failed"); }
+    };
+
+    const callAI = async (prompt) => {
+        const delays = [1000, 2000, 4000, 8000];
+        for (let i = 0; i < delays.length; i++) {
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            responseSchema: {
+                                type: "OBJECT",
+                                properties: {
+                                    probabilidade: { type: "NUMBER" },
+                                    veredito: { type: "STRING" },
+                                    analise: { type: "STRING" },
+                                    status: { type: "STRING" }
+                                }
+                            }
+                        }
+                    })
+                });
+                if (!response.ok) throw new Error();
+                const json = await response.json();
+                return JSON.parse(json.candidates[0].content.parts[0].text);
+            } catch (err) {
+                if (i === delays.length - 1) throw new Error("Erro de conexão. Tente novamente.");
+                await new Promise(r => setTimeout(r, delays[i]));
+            }
         }
-        
-        // Cálculo de probabilidade fixo (entre 65 e 85)
-        const baseProb = 65 + (seed % 21);
-        const finalProb = line > 10.5 ? baseProb - 10 : baseProb;
-        
-        const status = finalProb >= 70 ? "Favorável" : "Risco Moderado";
-        
-        document.getElementById('v-title').innerHTML = `Veredito: Over ${line} ${status}`;
-        document.getElementById('v-prob').innerHTML = `${finalProb}% DE PROBABILIDADE`;
-        
-        document.getElementById('v-desc').innerHTML = `O confronto entre ${teams} em março de 2026 apresenta um cenário tático ${status.toLowerCase()} para estatísticas nativas. A equipe mandante mantém filosofia de pressão alta e verticalidade. resultando em volume constante de jogadas de fundo. O adversário utiliza alas para dar amplitude. gerando transições que forçam a linha de ${line}. A média somada das equipes na temporada atual suporta o índice de ${finalProb}%. com aproveitamento sólido em mercados similares.`;
-    }
+    };
+
+    window.runAnalysis = async () => {
+        const teams = document.getElementById('teams').value.trim();
+        const rawLine = document.getElementById('market_line').value.trim();
+        const sport = document.getElementById('sport').value;
+        const btn = document.getElementById('btn-action');
+        const btnText = document.getElementById('btn-text');
+        const loader = document.getElementById('btn-loader');
+        const panel = document.getElementById('panel-result');
+        const errorBox = document.getElementById('error-box');
+        const resContainer = document.getElementById('result-container');
+
+        if (!teams || !rawLine) return;
+
+        errorBox.style.display = 'none';
+        panel.style.display = 'none';
+        btn.disabled = true;
+        btnText.style.display = 'none';
+        loader.style.display = 'block';
+
+        const prompt = `Analise profissionalmente o confronto ${teams} no esporte ${sport} para a linha ${rawLine}. Estamos em março de 2026. Use dados táticos atuais e médias nativas. Responda JSON com probabilidade (0-100), veredito (frase curta), analise (parecer técnico direto em parágrafo único) e status (FAVORAVEL, MODERADO ou RISCO).`;
+
+        try {
+            const data = await callAI(prompt);
+            
+            document.getElementById('v-title').innerText = `Veredito: ${data.veredito}`;
+            document.getElementById('v-prob').innerText = `${data.probabilidade}% DE PROBABILIDADE`;
+            document.getElementById('v-desc').innerText = data.analise;
+
+            resContainer.className = 'result-box';
+            const probText = document.getElementById('v-prob');
+            probText.className = 'prob-value';
+
+            if (data.status === 'FAVORAVEL') {
+                resContainer.style.borderColor = "#00ff88";
+                probText.style.color = "#00ff88";
+            } else if (data.status === 'MODERADO') {
+                resContainer.style.borderColor = "#ffbb00";
+                probText.style.color = "#ffbb00";
+            } else {
+                resContainer.style.borderColor = "#ff4444";
+                probText.style.color = "#ff4444";
+            }
+
+            panel.style.display = 'block';
+            panel.scrollIntoView({ behavior: 'smooth' });
+        } catch (err) {
+            errorBox.innerText = err.message;
+            errorBox.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btnText.style.display = 'block';
+            loader.style.display = 'none';
+        }
+    };
+
+    window.addEventListener('DOMContentLoaded', initFirebase);
 </script>
 
 </body>
