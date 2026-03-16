@@ -51,7 +51,7 @@
 
 <script>
     function runAnalysis() {
-        const teams = document.getElementById('teams').value;
+        const teams = document.getElementById('teams').value.trim();
         const rawLine = document.getElementById('market_line').value;
         const panel = document.getElementById('panel-result');
         
@@ -60,14 +60,22 @@
 
         panel.style.display = 'block';
         
-        // Simulação de Inteligência Preditiva
-        const prob = Math.floor(Math.random() * (82 - 62 + 1)) + 62; 
-        const status = line <= 9.5 ? "Favorável" : "Risco Moderado";
+        // Gerador de semente fixa baseada no nome do confronto
+        let seed = 0;
+        for (let i = 0; i < teams.length; i++) {
+            seed += teams.charCodeAt(i);
+        }
+        
+        // Cálculo de probabilidade fixo (entre 65 e 85)
+        const baseProb = 65 + (seed % 21);
+        const finalProb = line > 10.5 ? baseProb - 10 : baseProb;
+        
+        const status = finalProb >= 70 ? "Favorável" : "Risco Moderado";
         
         document.getElementById('v-title').innerHTML = `Veredito: Over ${line} ${status}`;
-        document.getElementById('v-prob').innerHTML = `${prob}% DE PROBABILIDADE`;
+        document.getElementById('v-prob').innerHTML = `${finalProb}% DE PROBABILIDADE`;
         
-        document.getElementById('v-desc').innerHTML = `O confronto entre ${teams} em março de 2026 apresenta um cenário tático favorável para estatísticas nativas. A equipe mandante mantém filosofia de pressão alta e verticalidade, resultando em alto volume de jogadas de fundo. O adversário utiliza alas para dar amplitude, gerando transições que forçam a linha de ${line}. A média somada das equipes na temporada atual é superior à marca estabelecida, com alto índice de aproveitamento em mercados similares.`;
+        document.getElementById('v-desc').innerHTML = `O confronto entre ${teams} em março de 2026 apresenta um cenário tático ${status.toLowerCase()} para estatísticas nativas. A equipe mandante mantém filosofia de pressão alta e verticalidade. resultando em volume constante de jogadas de fundo. O adversário utiliza alas para dar amplitude. gerando transições que forçam a linha de ${line}. A média somada das equipes na temporada atual suporta o índice de ${finalProb}%. com aproveitamento sólido em mercados similares.`;
     }
 </script>
 
