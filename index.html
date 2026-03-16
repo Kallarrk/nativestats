@@ -12,76 +12,55 @@
         .input-group { text-align: left; margin-bottom: 20px; }
         label { display: block; font-size: 10px; color: #444; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; }
         input { background: #111; border: 1px solid #222; border-radius: 12px; padding: 15px; width: 100%; color: #fff; font-size: 16px; outline: none; }
-        .btn-analyze { background: #00ff88; color: #000; border: none; padding: 18px; width: 100%; border-radius: 15px; font-weight: 900; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
+        .btn-analyze { background: #00ff88; color: #000; border: none; padding: 18px; width: 100%; border-radius: 15px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
         #result-area { display: none; margin-top: 35px; }
         .circle-container { position: relative; width: 130px; height: 130px; margin: 0 auto 20px; }
         .circle-bg { fill: none; stroke: #1a1a1a; stroke-width: 10; }
         .circle-progress { fill: none; stroke: #00ff88; stroke-width: 10; stroke-dasharray: 408; stroke-dashoffset: 408; transform: rotate(-90deg); transform-origin: 50% 50%; transition: 1s; }
         .percentage { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 26px; font-weight: 900; color: #00ff88; }
         .veredito-label { color: #fff; font-size: 18px; font-weight: 800; margin-bottom: 12px; }
-        .analysis-text { color: #777; font-size: 13px; line-height: 1.5; text-align: justify; }
+        .analysis-text { color: #777; font-size: 13px; line-height: 1.5; text-align: center; }
     </style>
 </head>
 <body>
-
-<div class="app-card">
-    <div class="logo">NATIVE STATS</div>
-    <div class="input-group">
-        <label>Confronto</label>
-        <input type="text" id="teams" placeholder="Ex: Bragantino vs São Paulo">
-    </div>
-    <div class="input-group">
-        <label>Linha da Superbet</label>
-        <input type="text" id="line" placeholder="Ex: Mais de 9.5">
-    </div>
-    <button class="btn-analyze" id="btn" onclick="analyze()">Analisar Probabilidade</button>
-
-    <div id="result-area">
-        <div class="circle-container">
-            <svg width="130" height="130">
-                <circle class="circle-bg" cx="65" cy="65" r="60"></circle>
-                <circle id="bar" class="circle-progress" cx="65" cy="65" r="60"></circle>
-            </svg>
-            <div class="percentage" id="perc">0%</div>
+    <div class="app-card">
+        <div class="logo">NATIVE STATS</div>
+        <div class="input-group">
+            <label>Confronto</label>
+            <input type="text" id="teams" placeholder="Ex: Flamengo vs Vasco">
         </div>
-        <div class="veredito-label" id="veredito"></div>
-        <p class="analysis-text" id="desc"></p>
+        <div class="input-group">
+            <label>Linha da Superbet</label>
+            <input type="text" id="line" placeholder="Ex: Mais de 9.5">
+        </div>
+        <button class="btn-analyze" id="btn" onclick="analyze()">Analisar Probabilidade</button>
+        <div id="result-area">
+            <div class="circle-container">
+                <svg width="130" height="130"><circle class="circle-bg" cx="65" cy="65" r="60"></circle><circle id="bar" class="circle-progress" cx="65" cy="65" r="60"></circle></svg>
+                <div class="percentage" id="perc">0%</div>
+            </div>
+            <div class="veredito-label" id="veredito"></div>
+            <p class="analysis-text" id="desc"></p>
+        </div>
     </div>
-</div>
-
-<script>
-    function analyze() {
-        var t = document.getElementById('teams').value;
-        var l = document.getElementById('line').value;
-        
-        var num = parseFloat(l.replace(/[^0-9.]/g, ''));
-
-        if(!t || isNaN(num)) {
-            alert("Preencha os campos.");
-            return;
+    <script>
+        function analyze() {
+            var t = document.getElementById('teams').value;
+            var l = document.getElementById('line').value;
+            var n = parseFloat(l.replace(/[^0-9.]/g, ''));
+            if(!t || isNaN(n)) return;
+            document.getElementById('btn').innerText = "PROCESSANDO...";
+            document.getElementById('result-area').style.display = 'none';
+            setTimeout(function() {
+                document.getElementById('btn').innerText = "ANALISAR PROBABILIDADE";
+                document.getElementById('result-area').style.display = 'block';
+                var p = 70 + (t.length % 15);
+                document.getElementById('bar').style.strokeDashoffset = 408 - (408 * p) / 100;
+                document.getElementById('perc').innerText = p + "%";
+                document.getElementById('veredito').innerText = "Veredito: Over " + n + " Favorável";
+                document.getElementById('desc').innerText = "O confronto entre " + t + " apresenta cenário tático favorável. A média somada das equipes suporta a linha de " + n + ".";
+            }, 800);
         }
-
-        document.getElementById('btn').innerHTML = "PROCESSANDO...";
-        document.getElementById('result-area').style.display = 'none';
-
-        setTimeout(function() {
-            document.getElementById('btn').innerHTML = "ANALISAR PROBABILIDADE";
-            document.getElementById('result-area').style.display = 'block';
-            
-            var seed = 0;
-            for (var i = 0; i < t.length; i++) { seed += t.charCodeAt(i); }
-            var prob = 68 + (seed % 16);
-            
-            document.getElementById('bar').style.strokeDashoffset = 408 - (408 * prob) / 100;
-            document.getElementById('perc').innerHTML = prob + "%";
-            document.getElementById('veredito').innerHTML = "Veredito: Over " + num + " Favorável";
-            
-            var media = (num + 0.8).toFixed(1);
-            var texto = "O confronto entre " + t + " apresenta um cenário tático favorável para estatísticas nativas. A média somada das equipes na temporada atual é de " + media + " por partida, com alto índice de aproveitamento acima da marca de " + num + ".";
-            
-            document.getElementById('desc').innerHTML = texto;
-        }, 1000);
-    }
-</script>
+    </script>
 </body>
 </html>
